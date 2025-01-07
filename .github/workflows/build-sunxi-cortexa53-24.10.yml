@@ -1,4 +1,4 @@
-name: build-sunxi-cortexa53-immpotalWrt-24.10
+name: build-sunxi-cortexa53-immortalWrt-24.10
 
 on:
   workflow_dispatch:
