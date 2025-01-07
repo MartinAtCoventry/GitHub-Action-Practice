@@ -1,4 +1,4 @@
-name: build-friendlyarm_nanopi-r1-23.05.4-ImmpotalWrt
+name: build-friendlyarm_nanopi-r1-immortalWrt-23.05.4
 
 on:
   workflow_dispatch:
