@@ -85,7 +85,16 @@ jobs:
             sha256sum "$file" > "$file.sha256"
             sha256sum -c "$file.sha256"
           done
-      
+
+      - name: Create info
+        run: |
+          if [ "${{ github.event.inputs.include_docker }}" == "yes" ]; then
+            extra_content="### 默认带docker"
+            echo -e "\n $extra_content" >> ${{ github.workspace }}/info.md
+          else
+            echo -e "NO docker"
+          fi
+
       - name: Create GitHub Release Info
         uses: softprops/action-gh-release@v2.1.0
         with:
