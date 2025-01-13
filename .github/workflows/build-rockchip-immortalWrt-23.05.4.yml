@@ -37,6 +37,15 @@ on:
         description: '设置软件包大小 单位(MB)'
         required: true
         default: '1024'
+      include_docker:
+        type: choice
+        description: |
+          是否编译 Docker 插件
+        required: true
+        options:
+          - 'with'
+          - 'without'
+        default: 'without'
       enable_pppoe:
         type: choice
         description: "是否配置PPPoE拨号信息?"
@@ -107,7 +116,7 @@ jobs:
       - name: Upload ImmortWrt firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImmortWrt-23.05.4-Rockchip
+          name: immortWRt-23.05.04-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256
