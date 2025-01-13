@@ -39,11 +39,16 @@ PACKAGES="$PACKAGES luci-i18n-passwall-zh-cn"
 PACKAGES="$PACKAGES luci-app-openclash"
 PACKAGES="$PACKAGES luci-i18n-homeproxy-zh-cn"
 PACKAGES="$PACKAGES openssh-sftp-server"
-PACKAGES="$PACKAGES luci-i18n-dockerman-zh-cn"
 # 增加几个必备组件 方便用户安装iStore
 PACKAGES="$PACKAGES fdisk"
 PACKAGES="$PACKAGES script-utils"
 PACKAGES="$PACKAGES luci-i18n-samba4-zh-cn"
+
+# 判断是否需要编译 Docker 插件
+if [ "$INCLUDE_DOCKER" = "with" ]; then
+    PACKAGES="$PACKAGES luci-i18n-dockerman-zh-cn"
+    echo "Adding package: luci-i18n-dockerman-zh-cn"
+fi
 
 # 构建镜像
 echo "$(date '+%Y-%m-%d %H:%M:%S') - Building image with the following packages:"
