@@ -6,7 +6,7 @@ on:
       profile:
         type: choice
         description: |
-          输入 软路由型号 可选值如下：
+          select a device model：
         required: true
         options:
           - ariaboard_photonicat
@@ -34,13 +34,13 @@ on:
           - xunlong_orangepi-r1-plus-lts
         default: 'friendlyarm_nanopi-r4s'
       rootfs_partsize:
-        description: '设置软件包大小 单位(MB)'
+        description: 'Setting the partsize of software packages (MB)'
         required: true
         default: '1024'
       include_docker:
         type: choice
         description: |
-          是否编译 Docker 插件
+          Do you want to have the Docker package?
         required: true
         options:
           - 'with'
@@ -48,17 +48,17 @@ on:
         default: 'without'
       enable_pppoe:
         type: choice
-        description: "是否配置PPPoE拨号信息?"
+        description: "Do you want to preset a PPPoE virtual dial-up?"
         required: true
         options:
         - 'yes'
         - 'no'
         default: 'no'
       pppoe_account:
-        description: "宽带账号 (若启用PPPoE)"
+        description: "PPPoE Account (if enabled PPPoE):"
         required: false
       pppoe_password:
-        description: "宽带密码 (若启用PPPoE)"
+        description: "PPPoE Password (if enabled PPPoE):"
         required: false
 
 jobs:
@@ -115,10 +115,10 @@ jobs:
             sha256sum -c "$file.sha256"
           done
 
-      - name: Upload ImmortWrt firmware to artifact
+      - name: Upload ImmortalWrt firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: immortWRt-23.05.04-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
+          name: ImmortalWrt-23.05.04-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256
