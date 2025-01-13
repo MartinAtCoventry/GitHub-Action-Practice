@@ -43,9 +43,9 @@ on:
           是否编译 Docker 插件
         required: true
         options:
-          - 'yes'
-          - 'no'
-        default: 'no'
+          - 'with'
+          - 'without'
+        default: 'without'
       enable_pppoe:
         type: choice
         description: "是否配置PPPoE拨号信息?"
@@ -84,6 +84,7 @@ jobs:
       - name: Building Rockchip ImmortalWrt
         run: |
           profiles="${{ github.event.inputs.profile }}"
+          include_docker="${{ github.event.inputs.include_docker }}"
           rootfs_partsize="${{ github.event.inputs.rootfs_partsize }}"
           
           IFS=',' read -r -a profile_array <<< "$profiles"
