@@ -43,9 +43,9 @@ on:
           是否编译 Docker 插件
         required: true
         options:
-          - 'with'
-          - 'without'
-        default: 'without'
+          - 'yes'
+          - 'no'
+        default: 'no'
       enable_pppoe:
         type: choice
         description: "是否配置PPPoE拨号信息?"
