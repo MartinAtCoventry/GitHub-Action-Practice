@@ -1,4 +1,4 @@
-name: build-rockchip-immortalWrt-23.05.4
+name: build-rockchip-immortalWrt-24.10.0
 
 on:
   workflow_dispatch:
@@ -8,30 +8,30 @@ on:
         description: |
           select a device model：
         required: true
-        options:
-          - ariaboard_photonicat
-          - armsom_sige3
-          - ezpro_mrkaio-m68s 
-          - firefly_roc-rk3328-cc 
-          - firefly_roc-rk3568-pc 
-          - friendlyarm_nanopc-t4 
-          - friendlyarm_nanopi-r2c 
-          - friendlyarm_nanopi-r2c-plus 
-          - friendlyarm_nanopi-r2s 
-          - friendlyarm_nanopi-r4s 
-          - friendlyarm_nanopi-r4s-enterprise 
-          - friendlyarm_nanopi-r4se 
-          - friendlyarm_nanopi-r5c 
-          - friendlyarm_nanopi-r5s 
-          - huake_guangmiao-g4c 
-          - lunzn_fastrhino-r66s 
-          - lunzn_fastrhino-r68s 
-          - lyt_t68m 
-          - pine64_rockpro64 
-          - radxa_rock-pi-4a 
-          - radxa_rock-pi-e 
-          - xunlong_orangepi-r1-plus 
-          - xunlong_orangepi-r1-plus-lts
+        options:  
+          - friendlyarm_nanopi-r2s
+          - friendlyarm_nanopi-r3s
+          - friendlyarm_nanopi-r4s
+          - friendlyarm_nanopi-r4s-enterprise
+          - friendlyarm_nanopi-r4se
+          - friendlyarm_nanopi-r5c
+          - friendlyarm_nanopi-r5s
+          - friendlyarm_nanopi-r6c
+          - friendlyarm_nanopi-r6s
+          - radxa_cm3_io
+          - radxa_e25
+          - radxa_rock-3a
+          - radxa_rock-3b
+          - radxa_rock-3c
+          - radxa_rock-5a
+          - radxa_rock-5b
+          - radxa_rock-pi-4a
+          - radxa_rock-pi-e
+          - radxa_rock-pi-s
+          - radxa_zero-3e
+          - radxa_zero-3w
+          - sinovoip_bpi-r2-pro
+          - xunlong_orangepi-5-plus
         default: 'friendlyarm_nanopi-r4s'
       rootfs_partsize:
         description: 'Setting the partsize of software packages (MB)'
@@ -70,7 +70,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set executable permissions
-        run: chmod +x ${{ github.workspace }}/rockchip/23.05.4/build.sh
+        run: chmod +x ${{ github.workspace }}/rockchip/build.sh
 
       - name: Validate PPPoE Inputs
         run: |
@@ -97,14 +97,14 @@ jobs:
               -v "${{ github.workspace }}/bin:/home/build/immortalwrt/bin" \
               -v "${{ github.workspace }}/files:/home/build/immortalwrt/files" \
               -v "${{ github.workspace }}/rockchip/imm.config:/home/build/immortalwrt/.config" \
-              -v "${{ github.workspace }}/rockchip/23.05.4/build.sh:/home/build/immortalwrt/build.sh" \
+              -v "${{ github.workspace }}/rockchip/build.sh:/home/build/immortalwrt/build.sh" \
               -e PROFILE=$profile \
               -e INCLUDE_DOCKER=$include_docker \
               -e ROOTFS_PARTSIZE=$rootfs_partsize \
               -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
               -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
               -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
-              immortalwrt/imagebuilder:rockchip-armv8-openwrt-23.05.4 /bin/bash /home/build/immortalwrt/build.sh
+              immortalwrt/imagebuilder:rockchip-armv8-openwrt-24.10.0 /bin/bash /home/build/immortalwrt/build.sh
           done
 
       - name: Generate Firmware SHA-256
