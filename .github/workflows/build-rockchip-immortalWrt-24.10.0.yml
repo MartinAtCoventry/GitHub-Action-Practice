@@ -118,7 +118,7 @@ jobs:
       - name: Upload ImmortalWrt firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImmortalWrt-23.05.04-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
+          name: ImmortalWrt-24.10.0-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256
