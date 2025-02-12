@@ -1,4 +1,4 @@
-name: build-nanopi-r1-immortalWrt-24.10.0
+name: build-rockchip-ImmortalWrt-24.10.0
 
 on:
   workflow_dispatch:
@@ -9,12 +9,43 @@ on:
           select a device model：
         required: true
         options:  
-          - friendlyarm_nanopi-r1
-        default: 'friendlyarm_nanopi-r1'
+          - friendlyarm_nanopi-r2s
+          - friendlyarm_nanopi-r3s
+          - friendlyarm_nanopi-r4s
+          - friendlyarm_nanopi-r4s-enterprise
+          - friendlyarm_nanopi-r4se
+          - friendlyarm_nanopi-r5c
+          - friendlyarm_nanopi-r5s
+          - friendlyarm_nanopi-r6c
+          - friendlyarm_nanopi-r6s
+          - radxa_cm3_io
+          - radxa_e25
+          - radxa_rock-3a
+          - radxa_rock-3b
+          - radxa_rock-3c
+          - radxa_rock-5a
+          - radxa_rock-5b
+          - radxa_rock-pi-4a
+          - radxa_rock-pi-e
+          - radxa_rock-pi-s
+          - radxa_zero-3e
+          - radxa_zero-3w
+          - sinovoip_bpi-r2-pro
+          - xunlong_orangepi-5-plus
+        default: 'friendlyarm_nanopi-r4s'
       rootfs_partsize:
         description: 'Setting the partsize of software packages (MB)'
         required: true
         default: '1024'
+      include_docker:
+        type: choice
+        description: |
+          Do you want to have the Docker package?
+        required: true
+        options:
+          - 'with'
+          - 'without'
+        default: 'without'
       enable_pppoe:
         type: choice
         description: "Do you want to preset a PPPoE virtual dial-up?"
@@ -39,7 +70,7 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set executable permissions
-        run: chmod +x ${{ github.workspace }}/sunxi-cortexa7/build.sh
+        run: chmod +x ${{ github.workspace }}/rockchip/build.sh
 
       - name: Validate PPPoE Inputs
         run: |
@@ -50,7 +81,7 @@ jobs:
             fi
           fi
 
-      - name: Building sunxi-cortexa7 ImmortalWrt 24.10.0
+      - name: Building Rockchip ImmortalWrt
         run: |
           profiles="${{ github.event.inputs.profile }}"
           include_docker="${{ github.event.inputs.include_docker }}"
@@ -64,19 +95,21 @@ jobs:
             docker run --rm -i \
               --user root \
               -v "${{ github.workspace }}/bin:/home/build/immortalwrt/bin" \
-              -v "${{ github.workspace }}/sunxi-cortexa7/files:/home/build/immortalwrt/files" \
-              -v "${{ github.workspace }}/sunxi-cortexa7/build.sh:/home/build/immortalwrt/build.sh" \
+              -v "${{ github.workspace }}/files:/home/build/immortalwrt/files" \
+              -v "${{ github.workspace }}/rockchip/imm.config:/home/build/immortalwrt/.config" \
+              -v "${{ github.workspace }}/rockchip/build.sh:/home/build/immortalwrt/build.sh" \
               -e PROFILE=$profile \
+              -e INCLUDE_DOCKER=$include_docker \
               -e ROOTFS_PARTSIZE=$rootfs_partsize \
               -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
               -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
               -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
-              immortalwrt/imagebuilder:sunxi-cortexa7-openwrt-24.10.0 /bin/bash /home/build/immortalwrt/build.sh
+              immortalwrt/imagebuilder:rockchip-armv8-openwrt-24.10.0 /bin/bash /home/build/immortalwrt/build.sh
           done
 
       - name: Generate Firmware SHA-256
         run: |
-          cp ${{ github.workspace }}/bin/targets/sunxi/cortexa7/*squashfs-sdcard.img.gz ${{ github.workspace }}
+          cp ${{ github.workspace }}/bin/targets/rockchip/armv8/*.img.gz ${{ github.workspace }}
           for file in *.img.gz; do
             sha256sum "$file" > "$file.sha256"
             sha256sum -c "$file.sha256"
@@ -85,7 +118,7 @@ jobs:
       - name: Upload ImmortalWrt firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImmortalWrt-24.10.0-sunxi-cortexa7-${{ github.event.inputs.profile }}
+          name: ImmortalWrt-24.10.0-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256

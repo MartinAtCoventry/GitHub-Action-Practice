@@ -1,8 +1,34 @@
 #!/bin/bash
+# Log file for debugging
+LOGFILE="/tmp/uci-defaults-log.txt"
+echo "Starting 99-custom.sh at $(date)" >> $LOGFILE
 # yml 传入的路由器型号 PROFILE
 echo "Building for profile: $PROFILE"
 # yml 传入的固件大小 ROOTFS_PARTSIZE
 echo "Building for ROOTFS_PARTSIZE: $ROOTFS_PARTSIZE"
+
+
+mkdir -p  /home/build/immortalwrt/files/etc/config
+echo "Create wlan-settings"
+# 创建wlan配置文件 yml传入环境变量WLAN_NAME等 写入配置文件 供99-custom.sh读取
+cat << EOF > /home/build/immortalwrt/files/etc/config/wlan-settings
+wlan_name=${WLAN_NAME}
+wlan_password=${WLAN_PASSWORD}
+EOF
+
+echo "cat wlan-settings"
+cat /home/build/immortalwrt/files/etc/config/wlan-settings
+
+echo "Create pppoe-settings"
+# 创建pppoe配置文件 yml传入环境变量ENABLE_PPPOE等 写入配置文件 供99-custom.sh读取
+cat << EOF > /home/build/immortalwrt/files/etc/config/pppoe-settings
+enable_pppoe=${ENABLE_PPPOE}
+pppoe_account=${PPPOE_ACCOUNT}
+pppoe_password=${PPPOE_PASSWORD}
+EOF
+
+echo "cat pppoe-settings"
+cat /home/build/immortalwrt/files/etc/config/pppoe-settings
 
 # 输出调试信息
 echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting build process..."
@@ -12,15 +38,13 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting build process..."
 PACKAGES=""
 PACKAGES="$PACKAGES curl"
 PACKAGES="$PACKAGES ipset"
+PACKAGES="$PACKAGES luci-i18n-diskman-zh-cn"
+PACKAGES="$PACKAGES luci-i18n-package-manager-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-firewall-zh-cn"
 # 服务——FileBrowser 用户名admin 密码admin
 PACKAGES="$PACKAGES luci-i18n-filebrowser-go-zh-cn"
 PACKAGES="$PACKAGES luci-app-argon-config"
 PACKAGES="$PACKAGES luci-i18n-argon-config-zh-cn"
-PACKAGES="$PACKAGES luci-i18n-diskman-zh-cn"
-
-#24.10.0
-PACKAGES="$PACKAGES luci-i18n-package-manager-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-ttyd-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-passwall-zh-cn"
 PACKAGES="$PACKAGES luci-app-openclash"

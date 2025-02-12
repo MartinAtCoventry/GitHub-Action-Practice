@@ -23,12 +23,12 @@ for iface in /sys/class/net/*; do
 done
 
 # 检查配置文件pppoe-settings是否存在 该文件由build.sh动态生成
-SETTINGS_FILE="/etc/config/pppoe-settings"
-if [ ! -f "$SETTINGS_FILE" ]; then
+PPPOE_SETTINGS="/etc/config/pppoe-settings"
+if [ ! -f "$PPPOE_SETTINGS" ]; then
     echo "PPPoE settings file not found. Skipping." >> $LOGFILE
 else
    # 读取pppoe信息($enable_pppoe、$pppoe_account、$pppoe_password)
-   . "$SETTINGS_FILE"
+   . "$PPPOE_SETTINGS"
 fi
 
 # 网络设置
@@ -58,12 +58,20 @@ fi
 
 # Configure WLAN
 # More options: https://openwrt.org/docs/guide-user/network/wifi/basic#wi-fi_interfaces
-uci set wireless.@wifi-device[0].disabled='0'
-uci set wireless.@wifi-iface[0].disabled='0'
-uci set wireless.@wifi-iface[0].encryption='psk2'
-uci set wireless.@wifi-iface[0].ssid="Protable-JAS-Router"
-uci set wireless.@wifi-iface[0].key="wh16422559981JD"
-uci commit wireless
+# 检查配置文件wlan-settings是否存在 该文件由build.sh动态生成
+WLAN_SETTINGS="/etc/config/wlan-settings"
+if [ ! -f "$WLAN_SETTINGS" ]; then
+    echo "wlan settings file not found. Skipping." >> $LOGFILE
+else
+    # 读取wlan信息($wlan_name、$wlan_password)
+    . "$WLAN_SETTINGS"
+    uci set wireless.@wifi-device[0].disabled='0'
+    uci set wireless.@wifi-iface[0].disabled='0'
+    uci set wireless.@wifi-iface[0].encryption='psk2'
+    uci set wireless.@wifi-iface[0].ssid=$wlan_name
+    uci set wireless.@wifi-iface[0].key=$wlan_password
+    uci commit wireless
+fi
 
 # 设置所有网口可访问网页终端
 uci delete ttyd.@ttyd[0].interface
