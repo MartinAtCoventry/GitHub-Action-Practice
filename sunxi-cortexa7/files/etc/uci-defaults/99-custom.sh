@@ -56,6 +56,8 @@ elif [ "$count" -gt 1 ]; then
    fi
 fi
 
+rm /etc/config/pppoe-settings
+
 # Configure WLAN
 # More options: https://openwrt.org/docs/guide-user/network/wifi/basic#wi-fi_interfaces
 # 检查配置文件wlan-settings是否存在 该文件由build.sh动态生成
@@ -71,6 +73,7 @@ else
     uci set wireless.@wifi-iface[0].ssid=$wlan_name
     uci set wireless.@wifi-iface[0].key=$wlan_password
     uci commit wireless
+    rm /etc/config/wlan-settings
 fi
 
 # 设置所有网口可访问网页终端
