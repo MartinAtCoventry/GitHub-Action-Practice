@@ -1,4 +1,4 @@
-name: build-sunxi-cortexa53-ImmortalWrt-24.10.0
+name: build-sunxi-cortexa53-ImmortalWrt-24.10.2
 
 on:
   workflow_dispatch:
@@ -39,7 +39,19 @@ jobs:
         run: |
           chmod +x ${{ github.workspace }}/sunxi-cortexa53/build.sh
 
-      - name: Build sunxi-cortexa53 ImmpotalWrt 24.10.0
+      - name: Download Clash Meta, GeoIP, and GeoSite
+        run: |
+          PLATFORM="arm64"
+          mkdir -p files/etc/openclash/core
+          # Download clash_meta
+          META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-${PLATFORM}.tar.gz"
+          wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta
+          chmod +x files/etc/openclash/core/clash_meta
+          # Download GeoIP and GeoSite
+          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat
+          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat
+
+      - name: Build sunxi-cortexa53 ImmpotalWrt 24.10.2
         run: |
           profiles="${{ github.event.inputs.profile }}"
           include_docker="${{ github.event.inputs.include_docker }}"
@@ -58,7 +70,7 @@ jobs:
               -e PROFILE=$profile \
               -e INCLUDE_DOCKER=$include_docker \
               -e ROOTFS_PARTSIZE=$rootfs_partsize \
-              immortalwrt/imagebuilder:sunxi-cortexa53-openwrt-24.10.0 /bin/bash /home/build/immortalwrt/build.sh
+              immortalwrt/imagebuilder:sunxi-cortexa53-openwrt-24.10.2 /bin/bash /home/build/immortalwrt/build.sh
           done
 
       - name: Generate Firmware SHA-256
@@ -72,7 +84,7 @@ jobs:
       - name: Upload ImmortWrt firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImmortalWrt-24.10.0-sunxi-cortexa53-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
+          name: ImmortalWrt-24.10.2-sunxi-cortexa53-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256

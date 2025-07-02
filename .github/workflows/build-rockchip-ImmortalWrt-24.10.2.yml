@@ -1,4 +1,4 @@
-name: build-rockchip-ImmortalWrt-24.10.0
+name: build-rockchip-ImmortalWrt-24.10.2
 
 on:
   workflow_dispatch:
@@ -10,7 +10,6 @@ on:
         required: true
         options:  
           - friendlyarm_nanopi-r2s
-          - friendlyarm_nanopi-r3s
           - friendlyarm_nanopi-r4s
           - friendlyarm_nanopi-r4s-enterprise
           - friendlyarm_nanopi-r4se
@@ -31,7 +30,10 @@ on:
           - radxa_zero-3e
           - radxa_zero-3w
           - sinovoip_bpi-r2-pro
+          - xunlong_orangepi-5
           - xunlong_orangepi-5-plus
+          - xunlong_orangepi-r1-plus
+          - xunlong_orangepi-r1-plus-lts
         default: 'friendlyarm_nanopi-r4s'
       rootfs_partsize:
         description: 'Setting the partsize of software packages (MB)'
@@ -81,7 +83,19 @@ jobs:
             fi
           fi
 
-      - name: Building Rockchip ImmortalWrt
+      - name: Download Clash Meta, GeoIP, and GeoSite
+        run: |
+          PLATFORM="arm64"
+          mkdir -p files/etc/openclash/core
+          # Download clash_meta
+          META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-${PLATFORM}.tar.gz"
+          wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta
+          chmod +x files/etc/openclash/core/clash_meta
+          # Download GeoIP and GeoSite
+          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat
+          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat
+
+      - name: Building Rockchip ImmortalWrt 24.10.2
         run: |
           profiles="${{ github.event.inputs.profile }}"
           include_docker="${{ github.event.inputs.include_docker }}"
@@ -104,7 +118,7 @@ jobs:
               -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
               -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
               -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
-              immortalwrt/imagebuilder:rockchip-armv8-openwrt-24.10.0 /bin/bash /home/build/immortalwrt/build.sh
+              immortalwrt/imagebuilder:rockchip-armv8-openwrt-24.10.2 /bin/bash /home/build/immortalwrt/build.sh
           done
 
       - name: Generate Firmware SHA-256
@@ -118,7 +132,7 @@ jobs:
       - name: Upload ImmortalWrt firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImmortalWrt-24.10.0-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
+          name: ImmortalWrt-24.10.2-rockchip-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256

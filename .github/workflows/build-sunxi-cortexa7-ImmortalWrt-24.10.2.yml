@@ -1,4 +1,4 @@
-name: build-sunxi-cortexa7-ImmortalWrt-24.10.0
+name: build-sunxi-cortexa7-ImmortalWrt-24.10.2
 
 on:
   workflow_dispatch:
@@ -24,20 +24,6 @@ on:
         description: 'Setting a password for accessing the WiFi'
         required: true
         default: '12345678'
-      enable_pppoe:
-        type: choice
-        description: "Do you want to preset a PPPoE virtual dial-up?"
-        required: true
-        options:
-        - 'yes'
-        - 'no'
-        default: 'no'
-      pppoe_account:
-        description: "PPPoE Account (if enabled PPPoE):"
-        required: false
-      pppoe_password:
-        description: "PPPoE Password (if enabled PPPoE):"
-        required: false
 
 jobs:
   build:
@@ -50,16 +36,19 @@ jobs:
       - name: Set executable permissions
         run: chmod +x ${{ github.workspace }}/sunxi-cortexa7/build.sh
 
-      - name: Validate PPPoE Inputs
+      - name: Download Clash Meta, GeoIP, and GeoSite
         run: |
-          if [[ "${{ inputs.enable_pppoe }}" == "yes" ]]; then
-            if [[ -z "${{ inputs.pppoe_account }}" || -z "${{ inputs.pppoe_password }}" ]]; then
-              echo "Error: PPPoE account and password must be provided when PPPoE is enabled!"
-              exit 1
-            fi
-          fi
+          PLATFORM="armv7"
+          mkdir -p files/etc/openclash/core
+          # Download clash_meta
+          META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-${PLATFORM}.tar.gz"
+          wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta
+          chmod +x files/etc/openclash/core/clash_meta
+          # Download GeoIP and GeoSite
+          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat -O files/etc/openclash/GeoIP.dat
+          wget -q https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat -O files/etc/openclash/GeoSite.dat
 
-      - name: Building sunxi-cortexa7 ImmortalWrt 24.10.0
+      - name: Building sunxi-cortexa7 ImmortalWrt 24.10.2
         run: |
           profiles="${{ github.event.inputs.profile }}"
           include_docker="${{ github.event.inputs.include_docker }}"
@@ -79,10 +68,7 @@ jobs:
               -e ROOTFS_PARTSIZE=$rootfs_partsize \
               -e WLAN_NAME=${{ inputs.wlan_name }} \
               -e WLAN_PASSWORD=${{ inputs.wlan_password}} \
-              -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
-              -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
-              -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
-              immortalwrt/imagebuilder:sunxi-cortexa7-openwrt-24.10.0 /bin/bash /home/build/immortalwrt/build.sh
+              immortalwrt/imagebuilder:sunxi-cortexa7-openwrt-24.10.2 /bin/bash /home/build/immortalwrt/build.sh
           done
 
       - name: Generate Firmware SHA-256
@@ -96,7 +82,7 @@ jobs:
       - name: Upload ImmortalWrt firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImmortalWrt-24.10.0-sunxi-cortexa7-${{ github.event.inputs.profile }}
+          name: ImmortalWrt-24.10.2-sunxi-cortexa7-${{ github.event.inputs.profile }}
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256
