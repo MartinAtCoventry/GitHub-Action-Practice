@@ -1,0 +1,110 @@
+name: build-sunxi-cortexa7-ImmortalWRT-24.10.5
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        description: |
+          select a device model：
+        required: true
+        options:  
+          - friendlyarm_nanopi-r1
+          - xunlong_orangepi-zero
+        default: 'friendlyarm_nanopi-r1'
+      custom_router_ip:
+        description: "Please Setup an IP address for managing router(Only valid on the devices which has multi-network-ports) IP format:192.168.x.1 or 10.x.x.1"
+        required: true
+        default: "192.168.27.1"
+      rootfs_partsize:
+        description: 'Setting the partsize of software packages (MB)'
+        required: true
+        default: '1024'
+      wlan_name:
+        description: 'Setting a name for the WiFi ssid'
+        required: true
+        default: 'Protable-JAS-Router'
+      wlan_password:
+        description: 'Setting a password for accessing the WiFi'
+        required: true
+        default: '12345678'
+      enable_pppoe:
+        description: "Do setup PPPoE?"
+        required: true
+        default: 'no'
+        type: choice
+        options:
+        - 'yes'
+        - 'no'
+      pppoe_account:
+        description: "PPPoE Account   (If enabled PPPoE)"
+        required: false
+      pppoe_password:
+        description: "PPPoE Passwork  (If enabled PPPoE)"
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set executable permissions
+        run: chmod +x ${{ github.workspace }}/sunxi-cortexa7/build24.sh
+
+      - name: Save Custom Router IP into OpenWrt files
+        run: |
+          mkdir -p "${{ github.workspace }}/custom"
+          echo "${{ github.event.inputs.custom_router_ip }}" > "${{ github.workspace }}/custom/custom_router_ip.txt"
+          echo "您设置的Rockchip软路由管理地址是:${{ github.event.inputs.custom_router_ip }}"
+          # 后续步骤会将该文件映射到路由器/etc/config/custom_router_ip.txt 以便用于开机脚本99-custom.sh读取用户设置的ip
+
+      - name: Validate PPPoE Inputs
+        run: |
+          if [[ "${{ inputs.enable_pppoe }}" == "yes" ]]; then
+            if [[ -z "${{ inputs.pppoe_account }}" || -z "${{ inputs.pppoe_password }}" ]]; then
+              echo "Error: PPPoE account and password must be provided when PPPoE is enabled!"
+              exit 1
+            fi
+          fi
+
+      - name: Building sunxi-cortexa7 ImmortalWrt 24.10.5
+        run: |
+          profile="${{ github.event.inputs.profile }}"
+          rootfs_partsize="${{ github.event.inputs.rootfs_partsize }}"
+          echo "Building for profile: $profile"    
+          docker run --rm -i \
+              --user root \
+              -v "${{ github.workspace }}/bin:/home/build/immortalwrt/bin" \
+              -v "${{ github.workspace }}/sunxi-cortexa7/files:/home/build/immortalwrt/files" \
+              -v "${{ github.workspace }}/custom:/home/build/immortalwrt/files/etc/config" \
+              -v "${{ github.workspace }}/sunxi-cortexa7/shell:/home/build/immortalwrt/shell" \
+              -v "${{ github.workspace }}/sunxi-cortexa7/build24.sh:/home/build/immortalwrt/build.sh" \
+              -e PROFILE=$profile \
+              -e ROOTFS_PARTSIZE=$rootfs_partsize \
+              -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
+              -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
+              -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
+              -e WLAN_NAME=${{ inputs.wlan_name }} \
+              -e WLAN_PASSWORD=${{ inputs.wlan_password}} \
+          immortalwrt/imagebuilder:sunxi-cortexa7-openwrt-24.10.5 /bin/bash /home/build/immortalwrt/build.sh
+
+      - name: Generate Firmware SHA-256
+        run: |
+          cp ${{ github.workspace }}/bin/targets/sunxi/cortexa7/*.img.gz ${{ github.workspace }}
+          for file in *.img.gz; do
+            sha256sum "$file" > "$file.sha256"
+            sha256sum -c "$file.sha256"
+          done
+
+      - name: Upload ImmortalWrt firmware to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImmortalWrt-24.10.5-sunxi-cortexa7-${{ github.event.inputs.profile }}
+          path: |
+            ${{ github.workspace }}/*.img.gz
+            ${{ github.workspace }}/*.sha256
+          compression-level: 0
+          retention-days: 1
