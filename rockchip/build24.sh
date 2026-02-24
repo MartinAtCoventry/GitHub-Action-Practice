@@ -9,19 +9,9 @@ echo "Building for profile: $PROFILE"
 # yml 传入的固件大小 ROOTFS_PARTSIZE
 echo "Building for ROOTFS_PARTSIZE: $ROOTFS_PARTSIZE"
 
+echo "Create pppoe-settings"
 mkdir -p  /home/build/immortalwrt/files/etc/config
 
-# 创建wlan配置文件 yml传入环境变量WLAN_NAME等 写入配置文件 供99-custom.sh读取
-echo "Create wlan-settings"
-cat << EOF > /home/build/immortalwrt/files/etc/config/wlan-settings
-wlan_name=${WLAN_NAME}
-wlan_password=${WLAN_PASSWORD}
-EOF
-
-echo "cat wlan-settings"
-cat /home/build/immortalwrt/files/etc/config/wlan-settings
-
-echo "Create pppoe-settings"
 # 创建pppoe配置文件 yml传入环境变量ENABLE_PPPOE等 写入配置文件 供99-custom.sh读取
 cat << EOF > /home/build/immortalwrt/files/etc/config/pppoe-settings
 enable_pppoe=${ENABLE_PPPOE}
@@ -32,13 +22,35 @@ EOF
 echo "cat pppoe-settings"
 cat /home/build/immortalwrt/files/etc/config/pppoe-settings
 
+if [ -z "$CUSTOM_PACKAGES" ]; then
+    echo "⚪️ Unselect any the 3rd part of app-packages yet."
+else
+    # 下载 run 文件仓库
+    echo "🔄 Cloning run files repo..."
+    git clone --depth=1 https://github.com/wukongdaily/store.git /tmp/store-run-repo
+
+    # 拷贝 run/arm64 下所有 run 文件和ipk文件 到 extra-packages 目录
+    mkdir -p /home/build/immortalwrt/extra-packages
+    cp -r /tmp/store-run-repo/run/arm64/* /home/build/immortalwrt/extra-packages/
+
+    echo "✅ Run files copied to extra-packages:"
+    ls -lh /home/build/immortalwrt/extra-packages/*.run
+    # 解压并拷贝ipk到packages目录
+    sh shell/prepare-packages.sh
+    ls -lah /home/build/immortalwrt/packages/
+    # 添加架构优先级信息
+    sed -i '1i\
+    arch aarch64_generic 10\n\
+    arch aarch64_cortex-a53 15' repositories.conf
+fi
+
 # 输出调试信息
 echo "$(date '+%Y-%m-%d %H:%M:%S') - Starting build process..."
-
+echo "Checking content of repositories.conf——————"
+cat repositories.conf
 # 定义所需安装的包列表 下列插件你都可以自行删减
 PACKAGES=""
 PACKAGES="$PACKAGES curl"
-PACKAGES="$PACKAGES openssh-sftp-server"
 PACKAGES="$PACKAGES ipset"
 PACKAGES="$PACKAGES hysteria"
 PACKAGES="$PACKAGES luci-i18n-firewall-zh-cn"
@@ -53,12 +65,19 @@ PACKAGES="$PACKAGES luci-i18n-ttyd-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-netdata-zh-cn"
 PACKAGES="$PACKAGES luci-app-openclash"
 PACKAGES="$PACKAGES luci-i18n-homeproxy-zh-cn"
+PACKAGES="$PACKAGES openssh-sftp-server"
 PACKAGES="$PACKAGES luci-i18n-vlmcsd-zh-cn"
 PACKAGES="$PACKAGES luci-i18n-zerotier-zh-cn"
 # 增加几个必备组件 方便用户安装iStore
 PACKAGES="$PACKAGES fdisk"
 PACKAGES="$PACKAGES script-utils"
 PACKAGES="$PACKAGES luci-i18n-samba4-zh-cn"
+
+# 判断是否需要编译 Docker 插件
+if [ "$INCLUDE_DOCKER" = "with" ]; then
+    PACKAGES="$PACKAGES luci-i18n-dockerman-zh-cn"
+    echo "Adding package: luci-i18n-dockerman-zh-cn"
+fi
 # 文件管理器
 PACKAGES="$PACKAGES luci-i18n-filemanager-zh-cn"
 # ======== shell/custom-packages.sh =======
@@ -74,7 +93,7 @@ if echo "$PACKAGES" | grep -q "luci-app-openclash"; then
     echo "✅ luci-app-openclash has been selected，install openclash core"
     mkdir -p files/etc/openclash/core
     # Download clash_meta
-    META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-armv7.tar.gz"
+    META_URL="https://raw.githubusercontent.com/vernesong/OpenClash/core/master/meta/clash-linux-arm64.tar.gz"
     wget -qO- $META_URL | tar xOvz > files/etc/openclash/core/clash_meta
     chmod +x files/etc/openclash/core/clash_meta
     # Download GeoIP and GeoSite

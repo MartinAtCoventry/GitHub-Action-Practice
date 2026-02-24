@@ -1,0 +1,133 @@
+name: build-sunxi-cortexa53-ImmortalWRT-24.10.5
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        type: choice
+        description: "Please select a device model!"
+        required: true
+        options:
+          - xunlong_orangepi-zero3
+          - xunlong_orangepi-zero-plus
+          - friendlyarm_nanopi-neo2
+        default: xunlong_orangepi-zero3
+      custom_router_ip:
+        description: "Please Setup an IP address for managing router(Only valid on the devices which has multi-network-ports) IP format:192.168.x.1 or 10.x.x.1"
+        required: true
+        default: '192.168.27.1'
+      rootfs_partsize:
+        description: 'Setting the partsize of software packages (MB)'
+        required: true
+        default: '1024'
+      enable_store:
+        description: "Integrate iStore app"
+        required: false
+        type: boolean
+        default: true
+      include_docker:
+        type: choice
+        description: |
+          Do you want to have the Docker package?
+        required: true
+        options:
+          - 'with'
+          - 'without'
+        default: 'without'
+      enable_pppoe:
+        type: choice
+        description: "Do you want to preset a PPPoE virtual dial-up?"
+        required: true
+        options:
+          - 'yes'
+          - 'no'
+        default: 'no'
+      pppoe_account:
+        description: "PPPoE Account (if enabled PPPoE):"
+        required: false
+      pppoe_password:
+        description: "PPPoE Password (if enabled PPPoE):"
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set executable permissions
+        run: |
+          chmod +x ${{ github.workspace }}/sunxi-cortexa53/build24.sh
+
+      - name: Save Custom Router IP into OpenWrt files
+        run: |
+          mkdir -p "${{ github.workspace }}/custom"
+          echo "${{ github.event.inputs.custom_router_ip }}" > "${{ github.workspace }}/custom/custom_router_ip.txt"
+          echo "The router management IP-address on Rockchip device you set is:${{ github.event.inputs.custom_router_ip }}"
+          # The file will be move to /etc/config/custom_router_ip.txt on router in subsequent steps in order to read the IP-address user set by the 99-custom.sh script
+
+      - name: Validate PPPoE Inputs
+        run: |
+          if [[ "${{ inputs.enable_pppoe }}" == "yes" ]]; then
+            if [[ -z "${{ inputs.pppoe_account }}" || -z "${{ inputs.pppoe_password }}" ]]; then
+              echo "Error: PPPoE account and password must be provided when PPPoE is enabled!"
+              exit 1
+            fi
+          fi
+
+      - name: Check Docker
+        run: |
+          if [[ "${{ inputs.include_docker }}" == "with" ]]; then
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES docker"' >> shell/custom-packages.sh
+            echo "✅ The docker module has been integrated into Allwinner platform."
+          fi
+
+      - name: Enable Store integration
+        run: |
+          if [ "${{ github.event.inputs.enable_store }}" == "true" ]; then
+            echo 'CUSTOM_PACKAGES="$CUSTOM_PACKAGES luci-app-store"' >> shell/custom-packages.sh
+            echo "✅ Integrated luci-app-store"
+          else
+            echo "❎ Unintegrate luci-app-store"
+          fi
+
+      - name: Build sunxi-cortexa53 ImmpotalWRT 24.10.5
+        run: |
+          profile="${{ github.event.inputs.profile }}"
+          include_docker="${{ github.event.inputs.include_docker }}"
+          rootfs_partsize="${{ github.event.inputs.rootfs_partsize }}"
+          echo "Building for profile: $profile"
+          docker run --rm -i \
+              --user root \
+              -v "${{ github.workspace }}/bin:/home/build/immortalwrt/bin" \
+              -v "${{ github.workspace }}/files:/home/build/immortalwrt/files" \
+              -v "${{ github.workspace }}/custom:/home/build/immortalwrt/files/etc/config" \
+              -v "${{ github.workspace }}/arch/arch.conf:/home/build/immortalwrt/files/etc/opkg/arch.conf" \
+              -v "${{ github.workspace }}/shell:/home/build/immortalwrt/shell" \
+              -v "${{ github.workspace }}/sunxi-cortexa53/build24.sh:/home/build/immortalwrt/build.sh" \
+              -e PROFILE=$profile \
+              -e ROOTFS_PARTSIZE=$rootfs_partsize \
+              -e ENABLE_PPPOE=${{ inputs.enable_pppoe }} \
+              -e PPPOE_ACCOUNT=${{ inputs.pppoe_account }} \
+              -e PPPOE_PASSWORD=${{ inputs.pppoe_password }} \
+          immortalwrt/imagebuilder:sunxi-cortexa53-openwrt-24.10.5 /bin/bash /home/build/immortalwrt/build.sh
+
+      - name: Generate Firmware SHA-256
+        run: |
+          cp ${{ github.workspace }}/bin/targets/sunxi/cortexa53/*squashfs-sdcard.img.gz ${{ github.workspace }}
+          for file in *.img.gz; do
+            sha256sum "$file" > "$file.sha256"
+            sha256sum -c "$file.sha256"
+          done
+
+      - name: Upload ImmortWRT firmware to artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ImmortalWRT-24.10.5-sunxi-cortexa53-${{ github.event.inputs.profile }}-${{ github.event.inputs.include_docker }}-docker
+          path: |
+            ${{ github.workspace }}/*.img.gz
+            ${{ github.workspace }}/*.sha256
+          compression-level: 0
+          retention-days: 1

@@ -15,7 +15,7 @@ on:
       custom_router_ip:
         description: "Please Setup an IP address for managing router(Only valid on the devices which has multi-network-ports) IP format:192.168.x.1 or 10.x.x.1"
         required: true
-        default: "192.168.27.1"
+        default: '192.168.27.1'
       rootfs_partsize:
         description: 'Setting the partsize of software packages (MB)'
         required: true
@@ -58,8 +58,8 @@ jobs:
         run: |
           mkdir -p "${{ github.workspace }}/custom"
           echo "${{ github.event.inputs.custom_router_ip }}" > "${{ github.workspace }}/custom/custom_router_ip.txt"
-          echo "您设置的Rockchip软路由管理地址是:${{ github.event.inputs.custom_router_ip }}"
-          # 后续步骤会将该文件映射到路由器/etc/config/custom_router_ip.txt 以便用于开机脚本99-custom.sh读取用户设置的ip
+          echo "The router management IP-address on Allwinner device you set is:${{ github.event.inputs.custom_router_ip }}"
+          # The file will be move to /etc/config/custom_router_ip.txt on router in subsequent steps in order to read the IP-address user set by the 99-custom.sh script
 
       - name: Validate PPPoE Inputs
         run: |
@@ -70,7 +70,7 @@ jobs:
             fi
           fi
 
-      - name: Building sunxi-cortexa7 ImmortalWrt 24.10.5
+      - name: Building sunxi-cortexa7 ImmortalWRT 24.10.5
         run: |
           profile="${{ github.event.inputs.profile }}"
           rootfs_partsize="${{ github.event.inputs.rootfs_partsize }}"
@@ -99,10 +99,10 @@ jobs:
             sha256sum -c "$file.sha256"
           done
 
-      - name: Upload ImmortalWrt firmware to artifact
+      - name: Upload ImmortalWRT firmware to artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ImmortalWrt-24.10.5-sunxi-cortexa7-${{ github.event.inputs.profile }}
+          name: ImmortalWRT-24.10.5-sunxi-cortexa7-${{ github.event.inputs.profile }}
           path: |
             ${{ github.workspace }}/*.img.gz
             ${{ github.workspace }}/*.sha256
